@@ -1,0 +1,74 @@
+{
+  "as_of": "2026-11-02",
+  "counts": {
+    "ABSURD_TOTAL": {
+      "dev": 0,
+      "test": 1
+    },
+    "DUPLICATE_INVOICE": {
+      "dev": 3,
+      "test": 1
+    },
+    "FUTURE_DATE": {
+      "dev": 2,
+      "test": 1
+    },
+    "HIDDEN_TEXT": {
+      "dev": 1,
+      "test": 0
+    },
+    "LINE_SUM_MISMATCH": {
+      "dev": 3,
+      "test": 1
+    },
+    "MISSING_PO": {
+      "dev": 3,
+      "test": 1
+    },
+    "NEEDS_OCR": {
+      "dev": 2,
+      "test": 1
+    },
+    "PRICE_ABOVE_TOLERANCE": {
+      "dev": 3,
+      "test": 1
+    },
+    "PROMPT_INJECTION": {
+      "dev": 3,
+      "test": 1
+    },
+    "QTY_ABOVE_RECEIVED": {
+      "dev": 2,
+      "test": 1
+    },
+    "TAX_MISMATCH": {
+      "dev": 3,
+      "test": 1
+    },
+    "TOTAL": {
+      "dev": 100,
+      "test": 50
+    },
+    "UNKNOWN_VENDOR": {
+      "dev": 3,
+      "test": 1
+    },
+    "clean": {
+      "dev": 73,
+      "test": 39
+    },
+    "route:auto_approved": {
+      "dev": 68,
+      "test": 38
+    },
+    "route:needs_review": {
+      "dev": 29,
+      "test": 11
+    },
+    "route:rejected": {
+      "dev": 3,
+      "test": 1
+    }
+  },
+  "seed": 42
+}

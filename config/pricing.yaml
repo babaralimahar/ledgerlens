@@ -1,0 +1,13 @@
+# USD per 1 million tokens. Copy current prices by hand from your provider's pricing page
+# and update `as_of`. Never hard-code prices from memory: every cost number in a README is
+# computed from logged token counts x this table.
+as_of: "YYYY-MM-DD"   # date you copied the prices
+source: ""            # URL of the provider's pricing page
+models:
+  fake:
+    input: 0
+    output: 0
+  # Add the exact model id you chose on Day 2, for example:
+  # your-model-id:
+  #   input: 0.00
+  #   output: 0.00
