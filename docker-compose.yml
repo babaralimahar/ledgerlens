@@ -41,6 +41,7 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       OTEL_ENDPOINT: http://jaeger:4318/v1/traces
       WORKER_MODE: embedded
+      UPLOAD_RATE_PER_MINUTE: ${UPLOAD_RATE_PER_MINUTE:-30}
       # The synthetic invoices are dated relative to 2026-11-02; real deployments leave this unset.
       BUSINESS_DATE: ${BUSINESS_DATE:-2026-11-02}
     depends_on:

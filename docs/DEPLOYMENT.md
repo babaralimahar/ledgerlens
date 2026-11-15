@@ -1,49 +1,58 @@
 # Deployment
 
-Target from the manual (Day 5): **Render free web service** (Docker) + **Neon free Postgres** with
-pgvector. Optional: a ~USD 5–6/month VPS running `docker compose` behind Caddy.
+Target from the manual (Day 16): **Render free web service** (Docker) running the API with an
+embedded worker, and **Neon free Postgres** (pgvector available). The config is in
+[`render.yaml`](../render.yaml).
 
-> Free-tier limits change often. The "verified" column must be filled in from the providers'
-> pricing pages **on the day you deploy**. Do not copy numbers from memory or from this file's
-> history.
+> Status: **not deployed yet.** It needs your Render, Neon and GitHub accounts. Everything below
+> is ready; the "verified" columns get filled in on the day you deploy. Free-tier limits change
+> often, so don't copy numbers from memory.
+
+## Steps (about 30 minutes)
+
+1. **Push to GitHub.** Create an empty private repo, then from `D:\AI Projects\ledgerlens` run
+   `git remote add origin <url>` and `git push -u origin main --tags`. CI runs: lint, types,
+   migrations, the routing gate and all tests.
+2. **Neon.** Create a project, then copy the **direct** connection string (Dashboard → Connect →
+   turn *Connection pooling* off). PgBouncer in transaction mode breaks asyncpg's prepared
+   statements. The `postgresql://…?sslmode=require&channel_binding=require` form works as-is:
+   Settings converts it for asyncpg.
+3. **Render.** New → Blueprint → select the repo. Render reads `render.yaml`. When asked, paste:
+   - `DATABASE_URL`: the Neon string from step 2
+   - `LLM_API_KEY`: your Gemini key
+
+   The first deploy builds the image, then runs `alembic upgrade head`, seeds the reference data
+   and starts the server.
+4. **Demo key.** From your machine, run
+   `$env:DATABASE_URL="<neon url>"; uv run python -m ledgerlens.cli create-key --name demo --role clerk`.
+   Keep the key for the demo. A clerk can't approve above 5,000 USD.
+5. **Verify.** `curl https://<app>.onrender.com/readyz` should return 200 with
+   `"database":"ok"`. Open `https://<app>.onrender.com/ui`, sign in, upload one PDF from
+   `evals/datasets/invoices/pdfs/` and watch it route. Then record the cold start: the first
+   request after 15+ minutes idle.
 
 ## Platform limits
 
-| Limit | Manual's note (24 Oct 2026) | Verified on (date) | Value you verified |
+| Limit | Manual's note (24 Oct 2026) | Verified on | Value you saw |
 |---|---|---|---|
 | Render free RAM | 512 MB | | |
-| Render free idle sleep / cold start | sleeps after 15 min idle | | cold start measured: ___ s |
-| Render free background workers | generally not on free tier → `WORKER_MODE=embedded` | | |
-| Render free pre-deploy command | (check) | | |
-| Neon free storage / compute | free Postgres that scales to zero | | |
-| Neon pgvector | available (`CREATE EXTENSION vector`) | | |
-
-## Steps
-
-1. **Neon:** create a project and database. Copy the **direct** connection string (not the
-   `-pooler` host: PgBouncer in transaction mode breaks asyncpg's prepared statements). A
-   `postgresql://…?sslmode=require` URL works as-is: Settings converts it for asyncpg.
-2. **Migrations (once per release, never on every boot):** from your machine,
-   `$env:DATABASE_URL="<neon url>"; uv run alembic upgrade head`. If Render's free plan offers a
-   pre-deploy command, use `alembic upgrade head` there instead.
-3. **Render:** New → Web Service → this repo → runtime Docker. Health check path `/healthz`.
-   Environment variables (set in the dashboard, never in git):
-   `DATABASE_URL`, `ENV=prod`, `LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`,
-   `WORKER_MODE=embedded`. Render sets `PORT`, and the Dockerfile honours it.
-4. **First API key:** `$env:DATABASE_URL="<neon url>"; uv run python -m app.cli create-key --name you --role admin`.
-5. **Verify:** `curl https://<app>.onrender.com/readyz` returns 200 with `"database":"ok"`.
-   Record the cold-start time (first request after more than 15 minutes idle) in the table above.
+| Render free idle sleep / cold start | sleeps after 15 min idle | | cold start: ___ s |
+| Render free background workers | not on free tier → `WORKER_MODE=embedded` | | |
+| Neon free storage / compute | permanent free tier, scales to zero | | |
 
 ## Rollback
 
-- Code: Render → Deploys → pick the previous deploy → Rollback.
-- Schema: each migration has a `downgrade()`. Roll back code first, then
-  `uv run alembic downgrade -1` only if the new schema breaks the old code.
+- **Code:** Render → Deploys → previous deploy → Rollback.
+- **Schema:** each migration has a `downgrade()`. Roll back the code first, then run
+  `uv run alembic downgrade -1` against Neon only if the new schema breaks the old code.
 
-## Known limitations (state these honestly in the README)
+## Known limitations of the free deployment
 
-- Cold starts on the free tier: the first request after idling is slow.
-- The embedded worker sleeps with the web service, so queued jobs wait until the next request
-  wakes it up.
-- `/metrics` is admin-only because the service is public. A Prometheus scraper would need an
-  admin key header.
+- Cold starts: the first request after idling is slow, and the embedded worker sleeps with the
+  service. Queued invoices wait until the next request wakes it.
+- File bytes are stored in Postgres (`invoice_files`). Fine for a demo; use S3-compatible
+  storage for real volumes.
+- Gemini's free tier rate-limits requests (p95 extraction latency on dev was ~35 s because of
+  retries) and Google may use free-tier content to improve its products. Use synthetic data
+  only, or switch to the paid tier.
+- `/metrics` is admin-only because the service is public.

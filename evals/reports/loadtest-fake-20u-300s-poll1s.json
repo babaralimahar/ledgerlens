@@ -1,0 +1,24 @@
+{
+  "mode": "closed-loop",
+  "users": 20,
+  "duration_s": 307.4,
+  "invoices_routed": 776,
+  "throughput_per_min": 151.5,
+  "upload_latency": {
+    "p50_s": 0.18,
+    "p95_s": 0.591,
+    "max_s": 1.917,
+    "n": 776
+  },
+  "end_to_end_latency_incl_queue": {
+    "p50_s": 7.797,
+    "p95_s": 10.468,
+    "max_s": 13.646,
+    "n": 776
+  },
+  "final_statuses": {
+    "needs_review": 776
+  },
+  "errors": {},
+  "note": "fake LLM (system overhead only), one embedded worker, same machine as the client"
+}

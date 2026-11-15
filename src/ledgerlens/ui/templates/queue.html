@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Review queue · LedgerLens{% endblock %}
+{% block body %}
+<div style="display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:12px">
+  <h1 style="margin:0">Invoices</h1>
+  <form class="inline" method="post" action="/ui/upload" enctype="multipart/form-data">
+    <label>Upload a PDF (max 10 MB) <input type="file" name="file" accept="application/pdf" required></label>
+    <button type="submit">Upload</button>
+  </form>
+</div>
+{% if error %}<p class="note err">{{ error }}</p>{% endif %}
+<nav class="tabs">
+  {% for t in tabs %}<a href="/ui?status={{ t }}" class="{{ 'on' if t == status else '' }}">{{ t.replace('_', ' ') }}</a>{% endfor %}
+</nav>
+<div class="panel scroll">
+  {% if items %}
+  <table>
+    <thead><tr><th>Invoice</th><th>Vendor</th><th class="num">Total</th><th>Why</th><th>Received</th></tr></thead>
+    <tbody>
+    {% for i in items %}
+      <tr>
+        <td><a href="/ui/invoices/{{ i.invoice_id }}">{{ i.invoice_number or i.invoice_id }}</a></td>
+        <td>{{ i.vendor_id or '—' }}</td>
+        <td class="num">{{ i.total or '—' }} {{ i.currency or '' }}</td>
+        <td>{% for r in i.reasons %}<span class="reason {{ r.severity }}" title="{{ r.message }}">{{ r.code }}</span>{% else %}<span class="muted">—</span>{% endfor %}</td>
+        <td class="muted">{{ i.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if next_after %}<p><a href="/ui?status={{ status }}&after={{ next_after }}">Next page →</a></p>{% endif %}
+  {% else %}
+  <div class="empty">Nothing here.</div>
+  {% endif %}
+</div>
+{% endblock %}

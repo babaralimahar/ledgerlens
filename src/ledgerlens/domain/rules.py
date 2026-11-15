@@ -237,3 +237,42 @@ def dedupe_issues(issues: Iterable[Issue]) -> list[Issue]:
             seen.add(key)
             out.append(i)
     return out
+
+
+DATE_FIELDS = ("invoice_date", "due_date")
+
+
+def check_date_evidence(ex: InvoiceExtraction) -> list[Issue]:
+    """The extracted date must be what its quote means. Day/month order comes from the
+    document itself (any unambiguous numeric date); if it cannot be determined, a human
+    decides. Wrong readings are errors; undecidable ones are warnings. Both block auto-approval."""
+    from ledgerlens.domain.dates import document_order, resolve
+
+    quotes = [f.evidence.quote for _, f in ((n, getattr(ex, n)) for n in DATE_FIELDS) if f.evidence]
+    order = document_order(quotes)
+    issues = []
+    for name in DATE_FIELDS:
+        f = getattr(ex, name)
+        if f.value is None or f.evidence is None:
+            continue
+        meant, ambiguous = resolve(f.evidence.quote, order)
+        if ambiguous:
+            issues.append(
+                Issue(
+                    "AMBIGUOUS_DATE",
+                    "warning",
+                    name,
+                    f"{f.evidence.quote!r} could be day-first or month-first; "
+                    "nothing on the invoice says which",
+                )
+            )
+        elif meant is not None and meant != f.value:
+            issues.append(
+                Issue(
+                    "DATE_EVIDENCE_MISMATCH",
+                    "error",
+                    name,
+                    f"extracted {f.value} but {f.evidence.quote!r} means {meant}",
+                )
+            )
+    return issues

@@ -17,6 +17,7 @@ from ledgerlens.domain.rules import (
     Issue,
     Values,
     check_confidence,
+    check_date_evidence,
     check_dates,
     check_line_amounts,
     check_line_sum,
@@ -87,7 +88,10 @@ def decide(
         issues += check_total(v.subtotal, v.tax, v.total, policy.amount_tolerance)
     if vendor.vendor is not None and v.subtotal is not None and v.tax is not None:
         issues += check_tax(v.subtotal, v.tax, vendor.vendor.tax_rate, policy.amount_tolerance)
-    issues += check_dates(v.invoice_date, v.due_date, today)
+    date_issues = check_date_evidence(ex)
+    issues += date_issues
+    if not date_issues:  # date checks on a misread or undecidable date give misleading reasons
+        issues += check_dates(v.invoice_date, v.due_date, today)
     issues += check_vendor_currency(
         v.currency, vendor.vendor.default_currency if vendor.vendor else None
     )

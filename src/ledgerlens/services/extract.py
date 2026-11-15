@@ -16,7 +16,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from app.adapters.llm import LLMClient, LLMResult, complete_with_retries
-from ledgerlens.domain.schemas import InvoiceExtraction
+from ledgerlens.domain.schemas import InvoiceExtraction, from_wire, wire_schema
 
 PROMPTS_DIR = Path("prompts")
 
@@ -89,7 +89,7 @@ async def extract(
     max_attempts: int = 3,
     prompts_dir: Path = PROMPTS_DIR,
 ) -> ExtractionOutcome:
-    schema = InvoiceExtraction.model_json_schema()
+    schema = wire_schema()  # flat for the model; validated against the strict schema below
     messages = build_messages(load_prompt(prompt_version, prompts_dir), pages)
     attempts: list[Attempt] = []
     for _ in (1, 2):  # original + one repair
@@ -98,7 +98,7 @@ async def extract(
         )
         try:
             raw = res.parsed if res.parsed is not None else json.loads(res.text or "")
-            ex = InvoiceExtraction.model_validate(raw)
+            ex = InvoiceExtraction.model_validate(from_wire(raw))
         except (ValidationError, json.JSONDecodeError, TypeError) as e:
             err = str(e)[:1500]
             attempts.append(Attempt(res, False, err))

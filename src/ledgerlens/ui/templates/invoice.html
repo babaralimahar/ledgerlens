@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}{{ inv.invoice_number or inv.invoice_id }} · LedgerLens{% endblock %}
+{% block body %}
+<p><a href="/ui">← Queue</a></p>
+<h1>{{ inv.invoice_number or 'Invoice' }}
+  <span {% if inv.status in ('queued', 'processing') %}hx-get="/ui/invoices/{{ inv.invoice_id }}/status" hx-trigger="every 2s" hx-swap="innerHTML"{% endif %}>
+    {% include "_status.html" %}
+  </span>
+</h1>
+{% if message %}<p class="note ok">{{ message }}</p>{% endif %}
+{% if error %}<p class="note err">{{ error }}</p>{% endif %}
+
+<div class="panel">
+  <dl class="grid kv">
+    <div><dt>Vendor</dt><dd>{{ inv.vendor_id or 'unknown' }}</dd></div>
+    <div><dt>PO</dt><dd>{{ inv.po_number or '—' }}</dd></div>
+    <div><dt>Invoice date</dt><dd>{{ inv.invoice_date or '—' }}</dd></div>
+    <div><dt>Due</dt><dd>{{ inv.due_date or '—' }}</dd></div>
+    <div><dt>Subtotal</dt><dd>{{ inv.totals.subtotal or '—' }}</dd></div>
+    <div><dt>Tax</dt><dd>{{ inv.totals.tax or '—' }}</dd></div>
+    <div><dt>Total</dt><dd>{{ inv.totals.total or '—' }} {{ inv.totals.currency or '' }}</dd></div>
+    <div><dt>Duplicate of</dt><dd>{% if inv.duplicate_of %}<a href="/ui/invoices/{{ inv.duplicate_of }}">{{ inv.duplicate_of }}</a>{% else %}—{% endif %}</dd></div>
+  </dl>
+</div>
+
+<h2>Why it is here</h2>
+<div class="panel">
+  {% if inv.reasons %}
+  <table>
+    <thead><tr><th>Reason</th><th>Field</th><th>Detail</th></tr></thead>
+    <tbody>{% for r in inv.reasons %}
+      <tr><td><span class="reason {{ r.severity }}">{{ r.code }}</span></td><td><code>{{ r.field }}</code></td><td>{{ r.message }}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+  {% elif inv.status == 'auto_approved' %}
+  <p class="muted" style="margin:0">Every check passed: vendor known, PO matched within tolerance, arithmetic and tax correct, all fields supported by evidence, total within the auto-approval limit.</p>
+  {% else %}<p class="muted" style="margin:0">No reasons recorded.</p>{% endif %}
+</div>
+
+<h2>Lines</h2>
+<div class="panel scroll">
+  {% if inv.lines %}
+  <table>
+    <thead><tr><th>#</th><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th><th>PO line</th></tr></thead>
+    <tbody>{% for l in inv.lines %}
+      <tr><td>{{ l.line_no }}</td><td>{{ l.description or '—' }}</td><td class="num">{{ l.qty if l.qty is not none else '—' }}</td>
+          <td class="num">{{ l.unit_price if l.unit_price is not none else '—' }}</td><td class="num">{{ l.amount or '—' }}</td>
+          <td>{{ l.po_line_no or '—' }}</td></tr>
+    {% endfor %}</tbody>
+  </table>
+  {% else %}<p class="muted" style="margin:0">No lines extracted.</p>{% endif %}
+</div>
+
+{% if inv.status in ('needs_review', 'auto_approved') %}
+<h2>Decision</h2>
+<div class="panel">
+  {% if me.role == 'clerk' %}<p class="muted" style="margin-top:0">As a clerk you can approve or reject invoices up to {{ '%.2f' % clerk_limit }} {{ inv.totals.currency or '' }}.</p>{% endif %}
+  <form class="inline" method="post" action="/ui/invoices/{{ inv.invoice_id }}/decision">
+    <label>Decision
+      <select name="decision">
+        {% if inv.status == 'needs_review' %}<option value="approve">Approve</option><option value="reject">Reject</option><option value="correct">Correct a field</option>{% endif %}
+        {% if inv.status == 'auto_approved' %}<option value="reopen">Reopen for review</option>{% endif %}
+      </select>
+    </label>
+    {% if inv.status == 'needs_review' %}
+    <label>Field (for corrections)
+      <select name="field"><option value="">—</option>
+        {% for f in ['invoice_number','invoice_date','due_date','po_number','subtotal','tax','total'] %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>New value <input name="value" maxlength="64"></label>
+    {% endif %}
+    <label>Reason (required) <textarea name="reason" rows="1" required minlength="3"></textarea></label>
+    <button type="submit">Save</button>
+  </form>
+</div>
+{% endif %}
+
+<h2>Extraction</h2>
+<div class="panel">
+  {% if inv.extraction %}
+  <p style="margin:0">Model <code>{{ inv.extraction.model }}</code> · prompt <code>{{ inv.extraction.prompt_version }}</code> ·
+     {{ inv.extraction.attempts }} attempt(s) · ${{ inv.extraction.cost_usd }} · {{ inv.extraction.latency_ms }} ms</p>
+  {% else %}<p class="muted" style="margin:0">The model was not called (no usable text layer, or still queued).</p>{% endif %}
+</div>
+
+<h2>History</h2>
+<div class="panel">
+  <ul class="hist" style="margin:0;padding-left:18px">
+    {% for h in inv.history %}<li><code>{{ h.at.strftime('%Y-%m-%d %H:%M:%S') }}</code> {{ h.action }} <span class="muted">by {{ h.actor }}</span>
+      {% if h.payload.reason %} — “{{ h.payload.reason }}”{% endif %}</li>{% endfor %}
+  </ul>
+</div>
+{% endblock %}

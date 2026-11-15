@@ -18,7 +18,7 @@ class LedgerSettings(Settings):
     max_request_bytes: int = Field(11 * 1024 * 1024, ge=1024)  # 10 MB file + multipart overhead
     max_upload_bytes: int = Field(10 * 1024 * 1024, ge=1024)
     upload_rate_per_minute: int = Field(30, ge=1)  # per API key, per process
-    prompt_version: str = "extract_v1"
+    prompt_version: str = "extract_v2"  # v1 vs v2 on dev: evals/reports, 2026-11-15
     pdf_parse_timeout_s: float = Field(20.0, gt=0)
     ocr_min_chars_per_page: int = Field(50, ge=0)
     job_max_attempts: int = Field(3, ge=1, le=10)

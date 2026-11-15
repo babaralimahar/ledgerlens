@@ -1,0 +1,145 @@
+{
+  "suite": "ledgerlens-system",
+  "split": "dev",
+  "dataset_sha256": "18ef9ace71a03d3f1cb4c8200bf6f72a808edeb28f11a740a055300880f62d3b",
+  "git_sha": "0178182-dirty",
+  "model": "gemini-3.1-flash-lite",
+  "prompt_version": "extract_v1",
+  "stopped_reason": null,
+  "routing": {
+    "n": 100,
+    "caution_reasons_on_clean": {
+      "ABOVE_AUTO_LIMIT": 5,
+      "AMBIGUOUS_DATE": 4
+    },
+    "n_defective": 27,
+    "false_auto_approvals": 0,
+    "false_auto_approval_ids": [],
+    "clean_auto_approval_rate": 0.9411764705882353,
+    "route_accuracy": 0.96,
+    "anomaly_catch": {
+      "DUPLICATE_INVOICE": {
+        "caught": 3,
+        "total": 3
+      },
+      "FUTURE_DATE": {
+        "caught": 2,
+        "total": 2
+      },
+      "HIDDEN_TEXT": {
+        "caught": 1,
+        "total": 1
+      },
+      "LINE_SUM_MISMATCH": {
+        "caught": 3,
+        "total": 3
+      },
+      "MISSING_PO": {
+        "caught": 3,
+        "total": 3
+      },
+      "NEEDS_OCR": {
+        "caught": 2,
+        "total": 2
+      },
+      "PRICE_ABOVE_TOLERANCE": {
+        "caught": 3,
+        "total": 3
+      },
+      "PROMPT_INJECTION": {
+        "caught": 3,
+        "total": 3
+      },
+      "QTY_ABOVE_RECEIVED": {
+        "caught": 2,
+        "total": 2
+      },
+      "TAX_MISMATCH": {
+        "caught": 3,
+        "total": 3
+      },
+      "UNKNOWN_VENDOR": {
+        "caught": 3,
+        "total": 3
+      }
+    },
+    "anomalies_missed": [],
+    "false_flags_on_clean": [
+      "INV-0082:['DUE_BEFORE_INVOICE']"
+    ],
+    "needs_review_without_reason": [],
+    "confusion": {
+      "auto_approved->auto_approved": 64,
+      "auto_approved->needs_review": 4,
+      "needs_review->needs_review": 29,
+      "rejected->rejected": 3
+    }
+  },
+  "extraction": {
+    "n_extracted": 98,
+    "valid_first_try": 98,
+    "valid_after_repair": 0,
+    "invalid": 0,
+    "valid_rate": 1.0,
+    "field_accuracy": {
+      "vendor_name": 1.0,
+      "vendor_tax_id": 1.0,
+      "invoice_number": 1.0,
+      "invoice_date": 0.9591836734693877,
+      "due_date": 0.9795918367346939,
+      "po_number": 1.0,
+      "subtotal": 1.0,
+      "tax": 1.0,
+      "total": 1.0,
+      "currency": 1.0
+    },
+    "line_precision": 1.0,
+    "line_recall": 1.0,
+    "line_f1": 1.0,
+    "cost_usd_total": "0.18958900",
+    "cost_usd_mean": "0.001934581632653061224489795918",
+    "cost_usd_p95": "0.00255875",
+    "latency_ms_p50": 4142.5,
+    "latency_ms_p95": 35424,
+    "unsupported_fields": {},
+    "errors": []
+  },
+  "field_errors": [
+    {
+      "id": "INV-0018",
+      "field": "invoice_date",
+      "expected": "2026-09-03",
+      "got": "2026-03-09"
+    },
+    {
+      "id": "INV-0029",
+      "field": "invoice_date",
+      "expected": "2026-12-04",
+      "got": "2026-04-12"
+    },
+    {
+      "id": "INV-0054",
+      "field": "invoice_date",
+      "expected": "2026-09-05",
+      "got": "2026-05-09"
+    },
+    {
+      "id": "INV-0054",
+      "field": "due_date",
+      "expected": "2026-10-05",
+      "got": "2026-05-10"
+    },
+    {
+      "id": "INV-0082",
+      "field": "invoice_date",
+      "expected": "2026-09-03",
+      "got": "2026-03-09"
+    },
+    {
+      "id": "INV-0082",
+      "field": "due_date",
+      "expected": "2026-11-02",
+      "got": "2026-02-11"
+    }
+  ]
+}

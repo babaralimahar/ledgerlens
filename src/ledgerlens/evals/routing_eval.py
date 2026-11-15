@@ -27,12 +27,18 @@ CATCHES: dict[str, set[str]] = {
     "MISSING_PO": {"MISSING_PO"},
     "PRICE_ABOVE_TOLERANCE": {"PRICE_ABOVE_TOLERANCE"},
     "QTY_ABOVE_RECEIVED": {"QTY_ABOVE_RECEIVED"},
-    "FUTURE_DATE": {"FUTURE_DATE"},
+    # A future date read the wrong way round is still stopped, by the date-evidence rule.
+    "FUTURE_DATE": {"FUTURE_DATE", "AMBIGUOUS_DATE", "DATE_EVIDENCE_MISMATCH"},
     "PROMPT_INJECTION": {"SUSPICIOUS_INSTRUCTIONS", "HIDDEN_TEXT"},
     "HIDDEN_TEXT": {"HIDDEN_TEXT"},
     "ABSURD_TOTAL": {"QTY_ABOVE_RECEIVED", "ABOVE_AUTO_LIMIT"},
     "NEEDS_OCR": {"NEEDS_OCR"},
 }
+
+
+# Deliberate caution (policy), not errors: they lower the auto-approval rate but are not
+# counted as false flags on clean invoices.
+CAUTION_CODES = frozenset({"ABOVE_AUTO_LIMIT", "AMBIGUOUS_DATE"})
 
 
 @dataclass(frozen=True)
@@ -106,12 +112,12 @@ def score(results: list[Routed]) -> dict[str, Any]:
         r.gt.id for r in results if r.status == "needs_review" and not r.reasons
     ]
     false_flags_clean = [
-        f"{r.gt.id}:{sorted(r.codes - {'ABOVE_AUTO_LIMIT'})}"
-        for r in clean
-        if r.codes - {"ABOVE_AUTO_LIMIT"}
+        f"{r.gt.id}:{sorted(r.codes - CAUTION_CODES)}" for r in clean if r.codes - CAUTION_CODES
     ]
+    caution = Counter(c for r in clean for c in r.codes & CAUTION_CODES)
     return {
         "n": len(results),
+        "caution_reasons_on_clean": dict(caution),
         "n_defective": len(defective),
         "false_auto_approvals": len(false_auto),
         "false_auto_approval_ids": false_auto,

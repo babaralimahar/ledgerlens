@@ -129,3 +129,80 @@ class InvoiceExtraction(BaseModel):
                 name.startswith("lines[") and short in REQUIRED_LINE_FIELDS
             ):
                 yield name, f
+
+
+# ------------------------------------------------------------------ wire format
+#
+# What the model is asked to return. Flat on purpose: some providers (Gemini's
+# OpenAI-compatible endpoint, Nov 2026) reject the nested strict schema above as too complex,
+# while accepting this one. ``from_wire`` converts it to the strict form, which is then
+# validated exactly as before, so nothing is checked less strictly.
+
+_WIRE_DESCRIPTIONS = {
+    "value": "The value as printed (dates YYYY-MM-DD, amounts as plain numbers), or null",
+    "quote": "Shortest verbatim text from the invoice that shows the value, or null",
+    "page": "1-based page number of the quote",
+    "confidence": "0.0-1.0",
+}
+
+
+def _wire_field() -> dict[str, Any]:
+    nullable_str = {"type": ["string", "null"]}
+    return {
+        "type": "object",
+        "properties": {
+            "value": {**nullable_str, "description": _WIRE_DESCRIPTIONS["value"]},
+            "quote": {**nullable_str, "description": _WIRE_DESCRIPTIONS["quote"]},
+            "page": {"type": "integer", "description": _WIRE_DESCRIPTIONS["page"]},
+            "confidence": {"type": "number", "description": _WIRE_DESCRIPTIONS["confidence"]},
+        },
+        "required": ["value", "quote", "page", "confidence"],
+    }
+
+
+def wire_schema() -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": {
+            **{name: _wire_field() for name in HEADER_FIELDS},
+            "lines": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {name: _wire_field() for name in LINE_FIELDS},
+                    "required": list(LINE_FIELDS),
+                },
+            },
+        },
+        "required": [*HEADER_FIELDS, "lines"],
+    }
+
+
+def _from_wire_field(f: Any) -> Any:
+    if (
+        not isinstance(f, dict) or "evidence" in f
+    ):  # already strict (or garbage: let Pydantic say so)
+        return f
+    value, quote = f.get("value"), f.get("quote")
+    page = f.get("page") or 1
+    return {
+        "value": value,
+        "evidence": {"quote": quote, "page": page} if value is not None and quote else None,
+        "confidence": f.get("confidence", 0.0),
+    }
+
+
+def from_wire(raw: Any) -> Any:
+    """Wire JSON -> strict ``InvoiceExtraction`` payload. Non-dicts pass through unchanged."""
+    if not isinstance(raw, dict):
+        return raw
+    out: dict[str, Any] = {k: _from_wire_field(v) for k, v in raw.items() if k != "lines"}
+    lines = raw.get("lines")
+    if isinstance(lines, list):
+        out["lines"] = [
+            {k: _from_wire_field(v) for k, v in ln.items()} if isinstance(ln, dict) else ln
+            for ln in lines
+        ]
+    elif "lines" in raw:
+        out["lines"] = lines
+    return out

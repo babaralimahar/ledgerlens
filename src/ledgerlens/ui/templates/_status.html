@@ -1,0 +1,1 @@
+<span class="pill s-{{ inv.status }}">{{ inv.status.replace('_', ' ') }}</span>{% if inv.status in ('queued', 'processing') %} <span class="muted">processing…</span>{% endif %}

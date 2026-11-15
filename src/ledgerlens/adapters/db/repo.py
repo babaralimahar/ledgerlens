@@ -29,7 +29,7 @@ from ledgerlens.adapters.db.models import (
     VendorRow,
 )
 from ledgerlens.domain.decide import Decision
-from ledgerlens.domain.normalize import norm_id
+from ledgerlens.domain.normalize import norm_id, show
 from ledgerlens.domain.reference import POLine, PurchaseOrder, Reference, ReferenceSet, Vendor
 from ledgerlens.domain.rules import Issue
 from ledgerlens.domain.schemas import InvoiceExtraction
@@ -418,8 +418,8 @@ async def invoice_view(session: AsyncSession, invoice_id: str) -> dict[str, Any]
             {
                 "line_no": li.line_no,
                 "description": li.description,
-                "qty": li.qty,
-                "unit_price": li.unit_price,
+                "qty": show(li.qty),
+                "unit_price": show(li.unit_price, 2),
                 "amount": _money(li.amount),
                 "po_line_ref": li.po_line_ref,
                 "po_line_no": li.po_line_no,

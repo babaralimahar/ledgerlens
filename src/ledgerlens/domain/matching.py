@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from rapidfuzz import fuzz
 
-from ledgerlens.domain.normalize import norm_id, norm_text
+from ledgerlens.domain.normalize import norm_id, norm_text, show
 from ledgerlens.domain.policy import Policy
 from ledgerlens.domain.reference import POLine, PurchaseOrder, Vendor
 from ledgerlens.domain.rules import Issue, LineValues, Values
@@ -140,7 +140,7 @@ def three_way_match(
                     "PRICE_ABOVE_TOLERANCE",
                     "error",
                     f"lines[{m.invoice_line}].unit_price",
-                    f"unit {ln.unit_price} vs PO {pl.unit_price} "
+                    f"unit {show(ln.unit_price, 2)} vs PO {show(pl.unit_price, 2)} "
                     f"(+{pct:.1f}% > {policy.price_tolerance_pct}%)",
                     m.invoice_line,
                 )
@@ -151,7 +151,7 @@ def three_way_match(
                     "QTY_ABOVE_RECEIVED",
                     "error",
                     f"lines[{m.invoice_line}].quantity",
-                    f"invoiced {ln.quantity}, received {pl.qty_received}",
+                    f"invoiced {show(ln.quantity)}, received {show(pl.qty_received)}",
                     m.invoice_line,
                 )
             )

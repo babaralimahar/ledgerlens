@@ -83,3 +83,14 @@ def norm_text(s: str) -> str:
 def norm_id(s: str) -> str:
     """Identifiers (invoice numbers, PO numbers, tax ids): drop spaces, dashes, case."""
     return re.sub(r"[\s\-_/.]", "", s).upper()
+
+
+def show(x: Decimal | None, min_places: int = 0) -> str:
+    """Human display: drop trailing zeros but keep ``min_places`` decimals (115.6300 -> 115.63,
+    2.000 -> 2, 12.5 with min 2 -> 12.50). Never used for arithmetic."""
+    if x is None:
+        return "—"
+    s = format(x.normalize(), "f")
+    whole, _, frac = s.partition(".")
+    frac = frac.ljust(min_places, "0")
+    return f"{whole}.{frac}" if frac else whole

@@ -129,3 +129,81 @@ def test_bad_files_raise_pdf_unreadable(data: bytes) -> None:
 
 def test_magic_bytes() -> None:
     assert is_pdf(b"%PDF-1.7 ...") and is_pdf(b"\n\n%PDF-1.4") and not is_pdf(b"PK\x03\x04")
+
+
+# ------------------------------------------------------------------ wire format
+
+
+def test_wire_schema_is_flat_and_complete() -> None:
+    from ledgerlens.domain.schemas import HEADER_FIELDS, LINE_FIELDS, wire_schema
+
+    s = wire_schema()
+    assert "$defs" not in json.dumps(s) and "$ref" not in json.dumps(s)
+    assert set(s["required"]) == {*HEADER_FIELDS, "lines"}
+    assert set(s["properties"]["lines"]["items"]["required"]) == set(LINE_FIELDS)
+
+
+def test_from_wire_builds_strict_payload() -> None:
+    from ledgerlens.domain.schemas import InvoiceExtraction, from_wire
+
+    def w(value: str | None, quote: str | None = None) -> dict[str, object]:
+        return {
+            "value": value,
+            "quote": quote if quote is not None else value,
+            "page": 1,
+            "confidence": 0.9,
+        }
+
+    raw = {
+        name: w(str(v) if v is not None else None)
+        for name, v in [
+            ("vendor_name", "Acme"),
+            ("vendor_tax_id", None),
+            ("invoice_number", "A1"),
+            ("invoice_date", "2026-10-01"),
+            ("due_date", None),
+            ("po_number", "PO-1"),
+            ("subtotal", "10.00"),
+            ("tax", "1.00"),
+            ("total", "11.00"),
+            ("currency", "USD"),
+        ]
+    }
+    raw["lines"] = [
+        {
+            "description": w("Bolts"),
+            "quantity": w("1"),
+            "unit_price": w("10.00"),
+            "amount": w("10.00"),
+            "po_line_ref": w(None),
+        }
+    ]
+    ex = InvoiceExtraction.model_validate(from_wire(raw))
+    assert ex.total.evidence is not None and ex.total.evidence.quote == "11.00"
+    assert ex.vendor_tax_id.value is None and ex.vendor_tax_id.evidence is None
+    # a value without a quote has no evidence -> verify_evidence will zero its confidence
+    raw["total"] = {"value": "11.00", "quote": None, "page": 1, "confidence": 0.99}
+    ex2 = InvoiceExtraction.model_validate(from_wire(raw))
+    assert ex2.total.evidence is None and "total" in verify_evidence(ex2, ["Acme A1 11.00"])
+
+
+async def test_wire_output_from_model_is_accepted() -> None:
+    from ledgerlens.domain.schemas import HEADER_FIELDS, LINE_FIELDS
+
+    strict = valid_payload()
+
+    def to_wire(f: dict[str, object]) -> dict[str, object]:
+        ev = f["evidence"]
+        return {
+            "value": f["value"],
+            "quote": ev["quote"] if isinstance(ev, dict) else None,
+            "page": 1,
+            "confidence": f["confidence"],
+        }
+
+    wire = {n: to_wire(strict[n]) for n in HEADER_FIELDS}  # type: ignore[arg-type]
+    wire["lines"] = [{n: to_wire(ln[n]) for n in LINE_FIELDS} for ln in strict["lines"]]  # type: ignore[attr-defined]
+    out = await extract(
+        FakeLLMClient([fake_result(text=json.dumps(wire))]), PAGES, prompt_version="extract_v1"
+    )
+    assert out.unsupported_fields == [] and out.extraction.total.value == CLEAN.total

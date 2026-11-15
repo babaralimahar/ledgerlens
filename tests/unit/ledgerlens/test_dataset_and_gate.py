@@ -109,7 +109,11 @@ def test_routing_gate_on_dev_ground_truth() -> None:
     assert s["anomalies_missed"] == []
     assert s["false_flags_on_clean"] == []
     assert s["needs_review_without_reason"] == []
-    assert s["route_accuracy"] == 1.0
+    # Clean invoices with an undecidable day/month order go to review on purpose, so
+    # route accuracy vs the generator labels is < 1 by design; every miss must be that.
+    for r in results:
+        if r.status != r.gt.expected_route:
+            assert r.gt.expected_route == "auto_approved" and r.codes == {"AMBIGUOUS_DATE"}, r.gt.id
     injected = {
         k: v
         for k, v in s["anomaly_catch"].items()
