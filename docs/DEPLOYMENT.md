@@ -4,9 +4,8 @@ Target from the manual (Day 16): **Render free web service** (Docker) running th
 embedded worker, and **Neon free Postgres** (pgvector available). The config is in
 [`render.yaml`](../render.yaml).
 
-> Status: **not deployed yet.** It needs your Render, Neon and GitHub accounts. Everything below
-> is ready; the "verified" columns get filled in on the day you deploy. Free-tier limits change
-> often, so don't copy numbers from memory.
+> Status: **live** at https://ledgerlens-wjry.onrender.com (deployed 2026-11-15; Render free web
+> service in Singapore + Neon free Postgres 17 in ap-southeast-1). `/readyz` -> database ok.
 
 ## Steps (about 30 minutes)
 
@@ -17,7 +16,9 @@ embedded worker, and **Neon free Postgres** (pgvector available). The config is 
    turn *Connection pooling* off). PgBouncer in transaction mode breaks asyncpg's prepared
    statements. The `postgresql://…?sslmode=require&channel_binding=require` form works as-is:
    Settings converts it for asyncpg.
-3. **Render.** New → Blueprint → select the repo. Render reads `render.yaml`. When asked, paste:
+3. **Render.** (Blueprints require a card on file; a plain *New → Web Service* with Docker,
+   region Singapore, instance **Free**, Docker Command `sh /app/start.sh` works the same.)
+   New → Blueprint → select the repo. Render reads `render.yaml`. When asked, paste:
    - `DATABASE_URL`: the Neon string from step 2
    - `LLM_API_KEY`: your Gemini key
 
@@ -36,7 +37,7 @@ embedded worker, and **Neon free Postgres** (pgvector available). The config is 
 | Limit | Manual's note (24 Oct 2026) | Verified on | Value you saw |
 |---|---|---|---|
 | Render free RAM | 512 MB | | |
-| Render free idle sleep / cold start | sleeps after 15 min idle | | cold start: ___ s |
+| Render free idle sleep / cold start | sleeps after 15 min idle | 2026-11-15 | sleeps after 15 min; Render warns of ~50 s+ on wake |
 | Render free background workers | not on free tier → `WORKER_MODE=embedded` | | |
 | Neon free storage / compute | permanent free tier, scales to zero | | |
 

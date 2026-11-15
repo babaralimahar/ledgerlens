@@ -1,5 +1,8 @@
 # LedgerLens
 
+**Live demo:** https://ledgerlens-wjry.onrender.com (free hosting: the first visit after idling can take about a minute to wake up). Demo access key on request.
+
+
 LedgerLens turns vendor invoice PDFs into validated, 3-way-matched records and sends only the
 exceptions to a human reviewer.
 
