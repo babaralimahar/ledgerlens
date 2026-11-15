@@ -5,6 +5,7 @@ services:
     name: ledgerlens
     runtime: docker
     plan: free
+    region: singapore  # same region as the Neon database (ap-southeast-1)
     healthCheckPath: /healthz
     # Free plan has no pre-deploy hook, so migrate + seed (both idempotent) run at start.
     dockerCommand: >-
