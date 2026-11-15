@@ -18,7 +18,7 @@ COPY migrations ./migrations
 COPY config ./config
 COPY prompts ./prompts
 COPY evals/datasets/invoices/reference.json ./evals/datasets/invoices/reference.json
-COPY alembic.ini ./
+COPY alembic.ini start.sh ./
 ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 USER app
 EXPOSE 8000
